@@ -441,7 +441,7 @@ install_fcitx5() {
 
     # Check if already configured
     if [[ -f "$profile" ]]; then
-        if grep -q 'keyboard-us-intl' "$profile"; then
+        if grep -qF 'keyboard-us-intl' "$profile"; then
             info "  fcitx5 profile already has keyboard-us-intl"
             return 0
         fi
