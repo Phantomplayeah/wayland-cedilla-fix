@@ -72,6 +72,131 @@ info() {
 }
 
 # -----------------------------------------------------------------------------
+# Backup & Merge Utilities
+# -----------------------------------------------------------------------------
+
+# backup_file <source_path>
+# Copy a file into the timestamped backup directory, preserving its path
+# relative to $HOME. Silently succeeds if the source does not exist.
+backup_file() {
+    local source="$1"
+
+    if [[ ! -f "$source" ]]; then
+        return 0
+    fi
+
+    # Strip $HOME prefix to get relative path
+    local rel_path="${source#"$HOME"/}"
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "  Would back up: $rel_path"
+        return 0
+    fi
+
+    mkdir -p "$BACKUP_DIR/$(dirname "$rel_path")"
+    cp -p "$source" "$BACKUP_DIR/$rel_path"
+    info "  Backed up: $rel_path"
+}
+
+# merge_line <file_path> <line_content> [marker_comment]
+# Idempotently append a line to a file. Returns 1 if already present (no change),
+# 0 if the line was added (or would be added in dry-run mode).
+merge_line() {
+    local file="$1"
+    local line="$2"
+    local marker="${3:-}"
+
+    # Check if line already exists
+    if [[ -f "$file" ]]; then
+        if grep -qF "$line" "$file"; then
+            return 1
+        fi
+    fi
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "  Would add to $(basename "$file"): $line"
+        return 0
+    fi
+
+    ensure_dir "$file"
+
+    if [[ -n "$marker" ]]; then
+        printf '%s\n' "$marker" >> "$file"
+    fi
+    printf '%s\n' "$line" >> "$file"
+    return 0
+}
+
+# merge_block <file_path> <block_content> <marker_tag>
+# Insert or replace a marked block in a file. The block is wrapped in
+# BEGIN/END marker comments for future idempotent updates.
+merge_block() {
+    local file="$1"
+    local block="$2"
+    local tag="$3"
+    local start_marker="# BEGIN wayland-cedilla-fix:${tag}"
+    local end_marker="# END wayland-cedilla-fix:${tag}"
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "  Would write block [${tag}] to $(basename "$file")"
+        return 0
+    fi
+
+    ensure_dir "$file"
+
+    # Build the full marked block
+    local full_block
+    full_block="$(printf '%s\n%s\n%s' "$start_marker" "$block" "$end_marker")"
+
+    if [[ -f "$file" ]]; then
+        if grep -qF "$start_marker" "$file"; then
+            # Replace existing block: read file, strip old block, append new
+            local tmp
+            tmp="$(mktemp)"
+            local inside=0
+            while IFS= read -r existing_line || [[ -n "$existing_line" ]]; do
+                if [[ "$existing_line" == "$start_marker" ]]; then
+                    inside=1
+                    continue
+                fi
+                if [[ "$existing_line" == "$end_marker" ]]; then
+                    inside=0
+                    continue
+                fi
+                if [[ "$inside" -eq 0 ]]; then
+                    printf '%s\n' "$existing_line" >> "$tmp"
+                fi
+            done < "$file"
+            # Append the new block
+            printf '%s\n' "$full_block" >> "$tmp"
+            mv "$tmp" "$file"
+            return 0
+        fi
+    fi
+
+    # File doesn't exist or markers not found — append
+    printf '%s\n' "$full_block" >> "$file"
+    return 0
+}
+
+# ensure_dir <file_path>
+# Create the parent directory for the given file path.
+ensure_dir() {
+    local file="$1"
+    local dir
+    dir="$(dirname "$file")"
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        if [[ ! -d "$dir" ]]; then
+            info "  Would create directory: $dir"
+        fi
+        return 0
+    fi
+
+    mkdir -p "$dir"
+}
+
+# -----------------------------------------------------------------------------
 # Animation Functions
 # -----------------------------------------------------------------------------
 
