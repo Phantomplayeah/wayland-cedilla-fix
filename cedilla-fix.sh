@@ -1270,13 +1270,219 @@ print_success() {
 }
 
 # -----------------------------------------------------------------------------
+# Uninstall — Revert from Backups
+# -----------------------------------------------------------------------------
+
+uninstall() {
+    local backup_base="${HOME}/.local/share/wayland-cedilla-fix/backup"
+
+    if [[ ! -d "$backup_base" ]]; then
+        die "No backup directory found at ${backup_base}. Nothing to uninstall."
+    fi
+
+    # Find the most recent backup (directories are named YYYYMMDD-HHMMSS)
+    local latest
+    latest=$(find "$backup_base" -mindepth 1 -maxdepth 1 -type d | sort -r | head -1)
+
+    if [[ -z "$latest" ]]; then
+        die "No backups found in ${backup_base}. Nothing to uninstall."
+    fi
+
+    local backup_date
+    backup_date=$(basename "$latest")
+
+    print_header
+    printf "  ── Uninstall ─────────────────────────────────────────\n"
+    printf "  Restoring from backup: %s\n\n" "$backup_date"
+
+    # Walk through every file in the backup and restore it
+    local restored=0
+    while IFS= read -r -d '' backup_file; do
+        # Strip the backup directory prefix to get the relative path
+        local rel_path="${backup_file#"$latest"/}"
+        local target="${HOME}/${rel_path}"
+
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+            printf "  Would restore: ~/%s\n" "$rel_path"
+        else
+            mkdir -p "$(dirname "$target")"
+            cp -p "$backup_file" "$target"
+            printf "  Restored: ~/%s\n" "$rel_path"
+        fi
+        restored=$((restored + 1))
+    done < <(find "$latest" -type f -print0)
+
+    if [[ "$restored" -eq 0 ]]; then
+        printf "  No files found in backup (all were new files).\n"
+        printf "  Checking for files created by this tool...\n\n"
+
+        # Remove files that were created (not backed up) by this tool
+        local created_files=(
+            "${HOME}/.XCompose"
+            "${HOME}/.config/environment.d/cedilla.conf"
+        )
+        local removed=0
+        local f
+        for f in "${created_files[@]}"; do
+            if [[ -f "$f" ]]; then
+                # Only remove if it contains our marker
+                if grep -qF 'wayland-cedilla-fix' "$f" 2>/dev/null || \
+                   grep -qF 'ccedilla' "$f" 2>/dev/null; then
+                    if [[ "$DRY_RUN" -eq 1 ]]; then
+                        printf "  Would remove: %s\n" "$f"
+                    else
+                        rm "$f"
+                        printf "  Removed: %s\n" "$f"
+                    fi
+                    removed=$((removed + 1))
+                fi
+            fi
+        done
+        if [[ "$removed" -eq 0 ]]; then
+            printf "  No tool-created files found to remove.\n"
+        fi
+    fi
+
+    # Restart fcitx5 if it's running, to pick up any profile changes
+    if pgrep -x fcitx5 >/dev/null 2>&1; then
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+            printf "\n  Would restart fcitx5\n"
+        else
+            pkill -9 -x fcitx5 2>/dev/null || true
+            sleep 0.3
+            ( fcitx5 -d --replace &>/dev/null & ) || true
+            printf "\n  Restarted fcitx5\n"
+        fi
+    fi
+
+    printf "\n"
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        printf "  %bDry run -- no changes applied.%b\n\n" "$BOLD" "$RESET"
+    else
+        printf "  ${GREEN}✓${RESET} Uninstall complete. Log out and back in for full effect.\n\n"
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Check Mode — Diagnostic Status
+# -----------------------------------------------------------------------------
+
+check_mode() {
+    printf "  ── Status ────────────────────────────────────────────\n"
+    printf "\n"
+
+    local issues=0
+
+    # --- Check 1: XCompose has cedilla overrides ---
+    local xcompose_file="${HOME}/.XCompose"
+    if [[ -f "$xcompose_file" ]]; then
+        if grep -qF 'ccedilla' "$xcompose_file" 2>/dev/null; then
+            printf "  ${GREEN}▸${RESET} ~/.XCompose              cedilla overrides present   ${GREEN}✓${RESET}\n"
+        else
+            printf "  ${YELLOW}▸${RESET} ~/.XCompose              missing cedilla overrides   ${YELLOW}✗${RESET}\n"
+            issues=$((issues + 1))
+        fi
+    else
+        printf "  ${YELLOW}▸${RESET} ~/.XCompose              file does not exist         ${YELLOW}✗${RESET}\n"
+        issues=$((issues + 1))
+    fi
+
+    # --- Check 2: Environment variables ---
+    local env_ok=1
+    if [[ -z "${GTK_IM_MODULE:-}" ]] || [[ "$GTK_IM_MODULE" != "fcitx" ]]; then
+        env_ok=0
+    fi
+    if [[ -z "${QT_IM_MODULE:-}" ]] || [[ "$QT_IM_MODULE" != "fcitx" ]]; then
+        env_ok=0
+    fi
+    if [[ -z "${XMODIFIERS:-}" ]] || [[ "$XMODIFIERS" != "@im=fcitx" ]]; then
+        env_ok=0
+    fi
+
+    if [[ "$env_ok" -eq 1 ]]; then
+        printf "  ${GREEN}▸${RESET} IM environment vars      GTK/QT/XMODIFIERS set      ${GREEN}✓${RESET}\n"
+    else
+        # Check if the file exists even if env vars aren't loaded yet
+        local env_file="${HOME}/.config/environment.d/cedilla.conf"
+        if [[ -f "$env_file" ]]; then
+            printf "  ${YELLOW}▸${RESET} IM environment vars      file exists, not yet active ${YELLOW}—${RESET}\n"
+            printf "                              (log out and back in)\n"
+        else
+            printf "  ${YELLOW}▸${RESET} IM environment vars      not configured              ${YELLOW}✗${RESET}\n"
+            issues=$((issues + 1))
+        fi
+    fi
+
+    # --- Check 3: Compositor keyboard variant ---
+    if [[ "$KB_NEEDS_FIX" -eq 0 ]]; then
+        printf "  ${GREEN}▸${RESET} Keyboard variant         us-intl (dead keys)        ${GREEN}✓${RESET}\n"
+    else
+        printf "  ${YELLOW}▸${RESET} Keyboard variant         %s%-28s${YELLOW}✗${RESET}\n" "$KB_VARIANT" " (no dead keys)"
+        issues=$((issues + 1))
+    fi
+
+    # --- Check 4: fcitx5 profile ---
+    if [[ "$IM_FRAMEWORK" == "fcitx5" ]]; then
+        local profile="${HOME}/.config/fcitx5/profile"
+        if [[ -f "$profile" ]] && grep -qF 'keyboard-us-intl' "$profile" 2>/dev/null; then
+            printf "  ${GREEN}▸${RESET} fcitx5 profile           keyboard-us-intl           ${GREEN}✓${RESET}\n"
+        else
+            printf "  ${YELLOW}▸${RESET} fcitx5 profile           missing keyboard-us-intl   ${YELLOW}✗${RESET}\n"
+            issues=$((issues + 1))
+        fi
+    fi
+
+    # --- Check 5: Browser flags ---
+    if [[ ${#BROWSERS[@]} -gt 0 ]]; then
+        local browser flags_file
+        for browser in "${BROWSERS[@]}"; do
+            flags_file=$(browser_flags_file "$browser")
+            if [[ -z "$flags_file" ]]; then
+                continue
+            fi
+            if [[ -f "$flags_file" ]] && grep -qF -- '--enable-wayland-ime' "$flags_file" 2>/dev/null; then
+                printf "  ${GREEN}▸${RESET} %-25s--enable-wayland-ime        ${GREEN}✓${RESET}\n" "${browser} flags"
+            else
+                printf "  ${YELLOW}▸${RESET} %-25smissing --enable-wayland-ime ${YELLOW}✗${RESET}\n" "${browser} flags"
+                issues=$((issues + 1))
+            fi
+        done
+    fi
+
+    # --- Check 6: Compose table verification ---
+    local compose_result=0
+    verify_compose || compose_result=$?
+    if [[ "$compose_result" -eq 0 ]]; then
+        printf "  ${GREEN}▸${RESET} Compose table (live)     dead_acute + c → ç         ${GREEN}✓${RESET}\n"
+    elif [[ "$compose_result" -eq 2 ]]; then
+        printf "  ${YELLOW}▸${RESET} Compose table (live)     xkbcli not installed       ${YELLOW}—${RESET}\n"
+    else
+        printf "  ${YELLOW}▸${RESET} Compose table (live)     cedilla not mapped         ${YELLOW}✗${RESET}\n"
+        issues=$((issues + 1))
+    fi
+
+    printf "\n"
+
+    # --- Summary & suggestions ---
+    if [[ "$issues" -eq 0 ]]; then
+        printf "  ${GREEN}${BOLD}All checks passed.${RESET} Cedilla should be working.\n"
+        printf "  If ' + c still produces ć, try logging out and back in.\n"
+    else
+        printf "  ${YELLOW}${BOLD}%d issue(s) found.${RESET}\n" "$issues"
+        printf "  Run ${BOLD}cedilla-fix.sh${RESET} to fix, or ${BOLD}cedilla-fix.sh --dry-run${RESET} to preview.\n"
+    fi
+
+    printf "\n"
+}
+
+# -----------------------------------------------------------------------------
 # Main Entry Point
 # -----------------------------------------------------------------------------
 
 parse_args "$@"
 
-# Show header for install and check modes (not --help which already exited)
-if [[ "$MODE" != "uninstall" ]] || [[ "$DRY_RUN" -eq 1 ]]; then
+# Show header for install and check modes (uninstall prints its own header)
+if [[ "$MODE" != "uninstall" ]]; then
     print_header
 fi
 
@@ -1286,12 +1492,18 @@ if [[ "$MODE" == "install" ]] || [[ "$MODE" == "check" ]]; then
 fi
 
 # Dispatch based on mode
-if [[ "$MODE" == "install" ]]; then
-    show_plan
-    confirm_or_exit
-    run_install
-    run_verify
-    print_success
-fi
-
-# Check and uninstall modes handled by subsequent tasks.
+case "$MODE" in
+    install)
+        show_plan
+        confirm_or_exit
+        run_install
+        run_verify
+        print_success
+        ;;
+    check)
+        check_mode
+        ;;
+    uninstall)
+        uninstall
+        ;;
+esac
