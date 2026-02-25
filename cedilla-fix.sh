@@ -952,7 +952,6 @@ install_single_browser() {
 }
 
 show_plan() {
-    local step=0
     PLAN_STEPS=()
     PLAN_FUNCTIONS=()
 
@@ -1093,7 +1092,9 @@ show_plan() {
         exit 0
     fi
 
-    printf "\n  Apply changes? [Y/n] "
+    if [[ "$FORCE" -eq 0 ]]; then
+        printf "\n  Apply changes? [Y/n] "
+    fi
 }
 
 confirm_or_exit() {
@@ -1123,18 +1124,25 @@ run_install() {
     printf "  ── Applying ──────────────────────────────────────────\n"
     printf "\n"
 
+    # Count actual (non-skipped) steps for the denominator
+    local real_total=0
+    local func
+    for func in "${PLAN_FUNCTIONS[@]}"; do
+        if [[ "$func" != "_skip_" ]]; then
+            real_total=$((real_total + 1))
+        fi
+    done
+
+    local executed=0
     local i
     for i in $(seq 0 $((PLAN_TOTAL - 1))); do
-        local func="${PLAN_FUNCTIONS[$i]}"
-
-        # Skip sentinel entries (e.g., Hyprland env vars already handled by
-        # install_compositor_hyprland in the dead keys step).
+        func="${PLAN_FUNCTIONS[$i]}"
         if [[ "$func" == "_skip_" ]]; then
             continue
         fi
-
+        executed=$((executed + 1))
         # shellcheck disable=SC2086
-        run_with_dots "${PLAN_STEPS[$i]}" "$((i + 1))" "$PLAN_TOTAL" $func
+        run_with_dots "${PLAN_STEPS[$i]}" "$executed" "$real_total" $func
     done
 
     printf "\n"
